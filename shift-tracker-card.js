@@ -66,8 +66,10 @@ class ShiftTrackerCard extends HTMLElement {
     if (!config || !config.entity) {
       throw new Error("Please select a calendar entity in the Shift Tracker card configuration.");
     }
+    const changedEntity = this._config.entity !== config.entity;
     this._config = { ...DEFAULT_CONFIG, ...config };
     this._render();
+    if (changedEntity) this._lastFetch = 0;
     this._fetchEvents(true);
   }
 
