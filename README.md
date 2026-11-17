@@ -34,7 +34,7 @@ A custom Home Assistant Lovelace card that reads a calendar and displays your sh
 
 ## Configuration
 
-Add the card through the dashboard's visual editor and select a calendar entity. The default entity is `calendar.arlos_schedule`.
+Add the card through the dashboard's visual editor and select a calendar entity. The default entity is `calendar.arlos_schedule`. The editor provides Home Assistant's native entity picker restricted to calendar entities.
 
 YAML example:
 
