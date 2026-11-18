@@ -63,6 +63,7 @@ class ShiftTrackerCard extends HTMLElement {
     this._error = null;
     this._unsubscribeEvents = null;
     this._rangeKey = null;
+    this._subscriptionPending = false;
   }
 
   setConfig(config) {
@@ -115,10 +116,11 @@ class ShiftTrackerCard extends HTMLElement {
     const end = new Date(start);
     end.setDate(end.getDate() + 2);
     const rangeKey = `${this._config.entity}|${start.toDateString()}`;
-    if (!force && this._rangeKey === rangeKey && this._unsubscribeEvents) return;
+    if (!force && this._rangeKey === rangeKey && (this._unsubscribeEvents || this._subscriptionPending)) return;
 
     this._unsubscribeCalendar();
     this._rangeKey = rangeKey;
+    this._subscriptionPending = true;
     this._loading = true;
     this._error = null;
     this._render();
@@ -155,8 +157,10 @@ class ShiftTrackerCard extends HTMLElement {
         end: end.toISOString(),
       }
     ).then((unsubscribe) => {
+      this._subscriptionPending = false;
       this._unsubscribeEvents = unsubscribe;
     }).catch((error) => {
+      this._subscriptionPending = false;
       this._loading = false;
       this._error = error?.message || "Unable to subscribe to calendar events.";
       this._render();
