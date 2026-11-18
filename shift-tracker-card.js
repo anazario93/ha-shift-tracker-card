@@ -30,7 +30,8 @@ function classifyEvent(summary) {
 function eventTime(value) {
   if (!value) return null;
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return new Date(value + "T00:00:00");
-  const date = new Date(value);
+  const normalized = typeof value === "string" ? value.replace(" ", "T") : value;
+  const date = new Date(normalized);
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
@@ -60,6 +61,8 @@ class ShiftTrackerCard extends HTMLElement {
     this._lastFetch = 0;
     this._loading = false;
     this._error = null;
+    this._unsubscribeEvents = null;
+    this._rangeKey = null;
   }
 
   setConfig(config) {
@@ -69,73 +72,100 @@ class ShiftTrackerCard extends HTMLElement {
     const changedEntity = this._config.entity !== config.entity;
     this._config = { ...DEFAULT_CONFIG, ...config };
     this._render();
-    if (changedEntity) this._lastFetch = 0;
-    this._fetchEvents(true);
+    if (changedEntity) {
+      this._unsubscribeCalendar();
+      this._rangeKey = null;
+      if (this._connected) this._subscribeEvents(true);
+    }
   }
 
   set hass(hass) {
     this._hass = hass;
-    if (this._connected && Date.now() - this._lastFetch > 60000) this._fetchEvents();
+    if (this._connected) this._subscribeEvents();
   }
 
   connectedCallback() {
     this._connected = true;
     this._render();
-    this._fetchEvents(true);
+    this._subscribeEvents(true);
     this._timer = window.setInterval(() => {
       this._now = new Date();
       this._render();
-      if (Date.now() - this._lastFetch > 60000) this._fetchEvents();
+      this._subscribeEvents();
     }, 15000);
   }
 
   disconnectedCallback() {
     this._connected = false;
     if (this._timer) window.clearInterval(this._timer);
+    this._unsubscribeCalendar();
   }
 
   getCardSize() {
     return 3;
   }
 
-  async _fetchEvents(force = false) {
-    if (!this._hass || !this._config.entity || this._loading) return;
-    if (!force && Date.now() - this._lastFetch < 60000) return;
+  _unsubscribeCalendar() {
+    if (this._unsubscribeEvents) {
+      this._unsubscribeEvents();
+      this._unsubscribeEvents = null;
+    }
+  }
 
+  _subscribeEvents(force = false) {
+    if (!this._hass || !this._config.entity || !this._hass.connection) return;
     const now = new Date();
     const start = new Date(now);
     start.setHours(0, 0, 0, 0);
     const end = new Date(start);
     end.setDate(end.getDate() + 2);
+    const rangeKey = `${this._config.entity}|${start.toDateString()}`;
+    if (!force && this._rangeKey === rangeKey && this._unsubscribeEvents) return;
 
+    this._unsubscribeCalendar();
+    this._rangeKey = rangeKey;
     this._loading = true;
     this._error = null;
-    try {
-      const result = await this._hass.callWS({
-        type: "calendar/events",
+    this._render();
+
+    this._hass.connection.subscribeMessage(
+      (message) => {
+        const receivedEvents = message?.events;
+        if (!Array.isArray(receivedEvents)) {
+          this._error = "Home Assistant returned no calendar event list.";
+          this._events = [];
+        } else {
+          this._events = receivedEvents.map((event) => {
+            const startDate = eventTime(event.start);
+            const endDate = eventTime(event.end);
+            return {
+              ...event,
+              title: event.summary || event.message || "Untitled event",
+              startDate,
+              endDate,
+              kind: classifyEvent(event.summary || event.message),
+            };
+          }).filter((event) => event.startDate && event.endDate)
+            .sort((a, b) => a.startDate - b.startDate);
+          this._error = null;
+        }
+        this._loading = false;
+        this._now = new Date();
+        this._render();
+      },
+      {
+        type: "calendar/event/subscribe",
         entity_id: this._config.entity,
         start: start.toISOString(),
         end: end.toISOString(),
-      });
-      this._events = (Array.isArray(result) ? result : []).map((event) => {
-        const startDate = eventTime(event.start);
-        const endDate = eventTime(event.end);
-        return {
-          ...event,
-          title: event.summary || event.message || "Untitled event",
-          startDate,
-          endDate,
-          kind: classifyEvent(event.summary || event.message),
-        };
-      }).filter((event) => event.startDate && event.endDate)
-        .sort((a, b) => a.startDate - b.startDate);
-      this._lastFetch = Date.now();
-    } catch (error) {
-      this._error = error?.message || "Unable to retrieve calendar events.";
-    } finally {
+      }
+    ).then((unsubscribe) => {
+      this._unsubscribeEvents = unsubscribe;
+    }).catch((error) => {
       this._loading = false;
+      this._error = error?.message || "Unable to subscribe to calendar events.";
       this._render();
-    }
+    });
   }
 
   _getViewModel() {
