@@ -184,7 +184,25 @@ class ShiftTrackerCard extends HTMLElement {
       event.startDate > now && event.kind !== "shift"
     );
     const current = active || (shift && shift.startDate <= now && shift.endDate > now ? shift : null);
-    const next = upcoming || (shift && shift.startDate > now ? shift : null);
+
+    // When a scheduled activity is in progress, show the working period
+    // immediately after it as the next item, ending at the next event or shift end.
+    let next = upcoming || (shift && shift.startDate > now ? shift : null);
+    if (active && shift) {
+      const followingEvent = events.find((event) =>
+        event.kind !== "shift" && event.startDate >= active.endDate
+      );
+      const workingEnd = followingEvent?.startDate || shift.endDate;
+      if (workingEnd > active.endDate) {
+        next = {
+          title: "Working",
+          kind: "shift",
+          startDate: active.endDate,
+          endDate: workingEnd,
+        };
+      }
+    }
+
     const shiftFinished = shift && shift.endDate <= now;
     return { shift, current, next, shiftFinished };
   }
