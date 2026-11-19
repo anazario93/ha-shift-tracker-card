@@ -4,6 +4,7 @@ const DEFAULT_CONFIG = {
   name: "Shift Tracker",
   show_countdown: true,
   show_current: true,
+  call_center_mode: false,
 };
 
 const ACTIVITY_COLORS = {
@@ -195,7 +196,7 @@ class ShiftTrackerCard extends HTMLElement {
       const workingEnd = followingEvent?.startDate || shift.endDate;
       if (workingEnd > active.endDate) {
         next = {
-          title: "Working",
+          title: this._config.call_center_mode ? "On Queue" : "Working",
           kind: "shift",
           startDate: active.endDate,
           endDate: workingEnd,
@@ -213,7 +214,10 @@ class ShiftTrackerCard extends HTMLElement {
     const shiftText = vm.shift
       ? `${formatTime(vm.shift.startDate)} – ${formatTime(vm.shift.endDate)}`
       : "No shift scheduled";
-    const nextTitle = vm.next ? vm.next.title : (vm.shiftFinished ? "Shift complete" : "Nothing scheduled");
+    const workingLabel = this._config.call_center_mode ? "On Queue" : "Working";
+    const nextTitle = vm.next
+      ? (vm.next.kind === "shift" && vm.next.title === "Working" ? workingLabel : vm.next.title)
+      : (vm.shiftFinished ? "Shift complete" : "Nothing scheduled");
     const nextTime = vm.next
       ? `${formatTime(vm.next.startDate)} – ${formatTime(vm.next.endDate)}`
       : "";
@@ -221,7 +225,7 @@ class ShiftTrackerCard extends HTMLElement {
       ? `Starts in ${durationUntil(vm.next.startDate, this._now)}`
       : "";
     const currentTitle = vm.current
-      ? (vm.current.kind === "shift" ? "Working" : vm.current.title)
+      ? (vm.current.kind === "shift" ? workingLabel : vm.current.title)
       : (vm.shiftFinished ? "Shift complete" : "Not currently scheduled");
     const statusKind = vm.current?.kind || (vm.shiftFinished ? "shift" : "other");
     const color = ACTIVITY_COLORS[statusKind] || ACTIVITY_COLORS.other;
@@ -268,8 +272,8 @@ class ShiftTrackerCard extends HTMLElement {
               <div class="current-value">${this._escape(currentTitle)}</div>
             </div>
             <div style="text-align:right">
-              <div class="label">Shift ends</div>
-              <div class="current-value">${vm.shift ? this._escape(formatTime(vm.shift.endDate)) : "—"}</div>
+              <div class="label">Time remaining</div>
+              <div class="current-value">${vm.shift && vm.shift.startDate <= this._now && vm.shift.endDate > this._now ? this._escape(durationUntil(vm.shift.endDate, this._now)) : "—"}</div>
             </div>
           </div>` : ""}
         ${this._error ? `<div class="error">${this._escape(this._error)}</div>` : ""}
@@ -324,6 +328,7 @@ class ShiftTrackerCardEditor extends HTMLElement {
         </div>
         <label class="toggle"><input id="countdown" type="checkbox" ${this._config.show_countdown ? "checked" : ""}> Show countdown</label>
         <label class="toggle"><input id="current" type="checkbox" ${this._config.show_current ? "checked" : ""}> Show current activity</label>
+        <label class="toggle"><input id="call-center" type="checkbox" ${this._config.call_center_mode ? "checked" : ""}> Call center mode (show “On Queue” instead of “Working”)</label>
       </div>`;
     const picker = this.querySelector("#entity");
     picker.hass = this._hass;
@@ -342,6 +347,10 @@ class ShiftTrackerCardEditor extends HTMLElement {
     });
     this.querySelector("#current").addEventListener("change", (event) => {
       this._config = { ...this._config, show_current: event.target.checked };
+      this._fireConfigChanged();
+    });
+    this.querySelector("#call-center").addEventListener("change", (event) => {
+      this._config = { ...this._config, call_center_mode: event.target.checked };
       this._fireConfigChanged();
     });
   }
