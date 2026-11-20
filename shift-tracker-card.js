@@ -244,16 +244,23 @@ class ShiftTrackerCard extends HTMLElement {
         .status { border-radius:999px; padding:5px 10px; color:var(--primary-text-color); background:var(--secondary-background-color); font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; }
         .status-dot { display:inline-block; width:7px; height:7px; margin-right:6px; border-radius:50%; background:${color}; }
         .label { color:var(--secondary-text-color); font-size:11px; font-weight:600; letter-spacing:.10em; text-transform:uppercase; }
+        .shift-row { display:flex; align-items:flex-end; justify-content:space-between; gap:12px; }
         .shift-time { margin-top:5px; color:var(--primary-text-color); font-size:20px; font-weight:500; line-height:1.3; font-variant-numeric:tabular-nums; }
-        .next { margin-top:22px; padding-top:18px; border-top:1px solid var(--divider-color); }
-        .next-title { margin-top:7px; color:${color}; font-size:clamp(28px, 7vw, 38px); font-weight:700; line-height:1.12; overflow-wrap:anywhere; }
-        .next-time { margin-top:8px; color:var(--primary-text-color); font-size:16px; font-weight:500; font-variant-numeric:tabular-nums; }
+        .remaining { flex-shrink:0; text-align:right; }
+        .remaining-value { margin-top:5px; color:var(--primary-text-color); font-size:16px; font-weight:700; font-variant-numeric:tabular-nums; }
+        .current { margin-top:18px; }
+        .current-value { margin-top:7px; color:${color}; font-size:clamp(28px, 7vw, 38px); font-weight:700; line-height:1.12; overflow-wrap:anywhere; }
+        .next { margin-top:20px; padding-top:16px; border-top:1px solid var(--divider-color); }
+        .next-title { margin-top:7px; color:var(--primary-text-color); font-size:20px; font-weight:600; line-height:1.25; overflow-wrap:anywhere; }
+        .next-time { margin-top:6px; color:var(--secondary-text-color); font-size:14px; font-weight:500; font-variant-numeric:tabular-nums; }
         .countdown { margin-top:5px; color:var(--secondary-text-color); font-size:13px; }
-        .current { display:flex; justify-content:space-between; gap:12px; margin-top:20px; padding-top:15px; border-top:1px solid var(--divider-color); }
-        .current-value { margin-top:5px; color:var(--primary-text-color); font-size:14px; font-weight:600; }
         .empty { color:var(--secondary-text-color); }
         .error { color:var(--error-color, #db4437); font-size:13px; margin-top:12px; }
-        @media (max-width: 360px) { ha-card { padding:16px; } .shift-time { font-size:18px; } }
+        @media (max-width: 360px) {
+          ha-card { padding:16px; }
+          .shift-row { align-items:flex-start; flex-wrap:wrap; }
+          .remaining { text-align:left; }
+        }
       </style>
       <ha-card>
         <div class="header">
@@ -262,25 +269,24 @@ class ShiftTrackerCard extends HTMLElement {
         </div>
         <div>
           <div class="label">Today's shift</div>
-          <div class="shift-time ${vm.shift ? "" : "empty"}">${this._escape(shiftText)}</div>
+          <div class="shift-row">
+            <div class="shift-time ${vm.shift ? "" : "empty"}">${this._escape(shiftText)}</div>
+            <div class="remaining">
+              <div class="label">Time remaining</div>
+              <div class="remaining-value">${vm.shift && vm.shift.startDate <= this._now && vm.shift.endDate > this._now ? this._escape(durationUntil(vm.shift.endDate, this._now)) : "—"}</div>
+            </div>
+          </div>
         </div>
+        ${this._config.show_current ? `
+          <div class="current">
+            <div class="label">Current activity</div>
+            <div class="current-value">${this._escape(currentTitle)}</div>
+          </div>` : ""}
         <div class="next">
           <div class="label">Next up</div>
           <div class="next-title">${this._escape(nextTitle)}</div>
           ${nextTime ? `<div class="next-time">${this._escape(nextTime)}</div>` : ""}
           ${countdown ? `<div class="countdown">${this._escape(countdown)}</div>` : ""}
-        </div>
-        ${this._config.show_current ? `
-          <div class="current">
-            <div>
-              <div class="label">Current activity</div>
-              <div class="current-value">${this._escape(currentTitle)}</div>
-            </div>
-            <div style="text-align:right">
-              <div class="label">Time remaining</div>
-              <div class="current-value">${vm.shift && vm.shift.startDate <= this._now && vm.shift.endDate > this._now ? this._escape(durationUntil(vm.shift.endDate, this._now)) : "—"}</div>
-            </div>
-          </div>` : ""}
         ${this._error ? `<div class="error">${this._escape(this._error)}</div>` : ""}
       </ha-card>`;
   }
