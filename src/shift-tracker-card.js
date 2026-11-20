@@ -1,4 +1,4 @@
-const CARD_VERSION = "1.0.1";
+const CARD_VERSION = "1.0.2";
 const DEFAULT_CONFIG = {
   entity: "calendar.arlos_schedule",
   name: "Shift Tracker",
@@ -71,9 +71,14 @@ class ShiftTrackerCard extends HTMLElement {
     if (!config || !config.entity) {
       throw new Error("Please select a calendar entity in the Shift Tracker card configuration.");
     }
+    const changedEntity = this._config.entity !== config.entity;
     this._config = { ...DEFAULT_CONFIG, ...config };
     this._render();
-    this._fetchEvents(true);
+    if (changedEntity) {
+      this._unsubscribeCalendar();
+      this._rangeKey = null;
+      if (this._connected) this._subscribeEvents(true);
+    }
   }
 
   set hass(hass) {
