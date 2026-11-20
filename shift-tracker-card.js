@@ -240,9 +240,9 @@ class ShiftTrackerCard extends HTMLElement {
         :host { display:block; }
         ha-card { padding: 20px; overflow:hidden; }
         .header { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:22px; }
-        .name { color:var(--primary-text-color); font-size:20px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; }
+        .name { color:var(--primary-text-color); font-size:14px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; }
         .header-remaining { flex-shrink:0; text-align:right; }
-        .header-remaining-value { margin-top:3px; color:var(--primary-text-color); font-size:20px; font-weight:700; line-height:1.2; font-variant-numeric:tabular-nums; }
+        .header-remaining-value { margin-top:3px; color:var(--primary-text-color); font-size:14px; font-weight:700; line-height:1.2; font-variant-numeric:tabular-nums; }
         .label { color:var(--secondary-text-color); font-size:11px; font-weight:600; letter-spacing:.10em; text-transform:uppercase; }
         .shift-row { display:grid; grid-template-columns:minmax(0, 1fr) auto; align-items:end; column-gap:16px; row-gap:5px; }
         .shift-time { margin-top:0; color:var(--primary-text-color); font-size:20px; font-weight:500; line-height:1.3; font-variant-numeric:tabular-nums; }
