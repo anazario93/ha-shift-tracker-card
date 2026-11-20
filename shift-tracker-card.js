@@ -251,6 +251,7 @@ class ShiftTrackerCard extends HTMLElement {
         .current { margin-top:18px; }
         .current-value { margin-top:7px; color:${color}; font-size:clamp(28px, 7vw, 38px); font-weight:700; line-height:1.12; overflow-wrap:anywhere; }
         .next { margin-top:20px; padding-top:16px; border-top:1px solid var(--divider-color); }
+        .shift-footer { margin-top:20px; padding-top:16px; border-top:1px solid var(--divider-color); }
         .next-title { margin-top:7px; color:var(--primary-text-color); font-size:20px; font-weight:600; line-height:1.25; overflow-wrap:anywhere; }
         .next-time { margin-top:6px; color:var(--secondary-text-color); font-size:14px; font-weight:500; font-variant-numeric:tabular-nums; }
         .countdown { margin-top:5px; color:var(--secondary-text-color); font-size:13px; }
@@ -269,10 +270,6 @@ class ShiftTrackerCard extends HTMLElement {
             <div class="header-remaining-value">${vm.shift && vm.shift.startDate <= this._now && vm.shift.endDate > this._now ? this._escape(durationUntil(vm.shift.endDate, this._now)) : "—"}</div>
           </div>
         </div>
-        <div>
-          <div class="label">Today's shift</div>
-          <div class="shift-time ${vm.shift ? "" : "empty"}">${this._escape(shiftText)}</div>
-        </div>
         ${this._config.show_current ? `
           <div class="current">
             <div class="label">Current activity</div>
@@ -283,6 +280,11 @@ class ShiftTrackerCard extends HTMLElement {
           <div class="next-title">${this._escape(nextTitle)}</div>
           ${nextTime ? `<div class="next-time">${this._escape(nextTime)}</div>` : ""}
           ${countdown ? `<div class="countdown">${this._escape(countdown)}</div>` : ""}
+        </div>
+        <div class="shift-footer">
+          <div class="label">Today's shift</div>
+          <div class="shift-time ${vm.shift ? "" : "empty"}">${this._escape(shiftText)}</div>
+        </div>
         ${this._error ? `<div class="error">${this._escape(this._error)}</div>` : ""}
       </ha-card>`;
   }
